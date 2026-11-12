@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Unit Test Photo Analyzer</title>
+</head>
+<body>
+    <div id="step2Container"></div>
+    <div id="photoBlueprint"></div>
+    <svg id="step2BlueprintSvg" viewBox="0 0 880 560"></svg>
+    <div id="aiAdoptedAreaVal"></div>
+    <div id="aiAdoptedAreaNote"></div>
+    <input id="paAreaSlider">
+    <input id="paAreaInput">
+    <select id="paQualitySelect"><option value="standard">standard</option></select>
+    <select id="paFloorsSelect"><option value="1">1</option></select>
+    <select id="paRoofSelect"><option value="gable">gable</option></select>
+    <div id="imageLightbox"><div id="lightboxSvgWrapper"></div><div id="lightboxSvgInner"></div><div id="lightboxSvgTitle"></div><div id="lightboxSvgSubtitle"></div><img id="lightboxImg"><div id="lightboxCaption"></div></div>
+
+    <script src="system.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const results = [];
+            // Test 1: Filename stated area parsing
+            const tests = [
+                { input: "house_60sqm.jpg", expected: 60 },
+                { input: "60m2_bungalow.png", expected: 60 },
+                { input: "floor_plan_60_square_meters.webp", expected: 60 },
+                { input: "Area: 60 sq.m. specifications", expected: 60 },
+                { input: "6x10_house_design.jpg", expected: 60 },
+                { input: "modern_villa_120sqm.jpg", expected: 120 }
+            ];
+
+            tests.forEach((t, i) => {
+                const detected = parseStatedAreaFromText(t.input);
+                results.push(`Test ${i+1} [${t.input}]: detected=${detected} (expected=${t.expected}) -> ${detected === t.expected ? 'PASS' : 'FAIL'}`);
+            });
+
+            // Test 2: Custom house model generation with 60 sqm
+            createCustomPhotoHouse('data:image/png;base64,dummy', 60, 1, 'standard', 'gable');
+            const house = window.systemState.houses['custom_photo'];
+            results.push(`Test 7 [State active house]: ${window.systemState.activeHouse === 'custom_photo' ? 'PASS' : 'FAIL'}`);
+            results.push(`Test 8 [House area = 60]: area=${house.area}, beds=${house.beds}, baths=${house.baths} -> ${house.area === 60 && house.beds === 2 ? 'PASS' : 'FAIL'}`);
+
+            // Test 3: Blueprint drawing
+            drawPhotoBlueprint(60, 1, 'step2BlueprintSvg');
+            const svg = document.getElementById('step2BlueprintSvg');
+            const hasBed1 = svg.innerHTML.includes('MASTER BEDROOM');
+            const hasBed2 = svg.innerHTML.includes('BEDROOM 2');
+            const hasLiving = svg.innerHTML.includes('LIVING &amp; DINING') || svg.innerHTML.includes('LIVING');
+            const has60sqm = svg.innerHTML.includes('60 SQ.M.');
+            results.push(`Test 9 [Blueprint 60sqm rendering]: beds=${hasBed1 && hasBed2}, living=${hasLiving}, 60sqm=${has60sqm} -> ${hasBed1 && hasBed2 && hasLiving && has60sqm ? 'PASS' : 'FAIL'}`);
+
+            // Write results to DOM for inspection
+            const outDiv = document.createElement('div');
+            outDiv.id = 'testOutput';
+            outDiv.innerText = results.join('\n');
+            document.body.appendChild(outDiv);
+        });
+    </script>
+</body>
+</html>
+
